@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+    /* spacing */
+
+table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  border: 3px solid purple;
+}
+
+thead th:nth-child(1) {
+  width: 30%;
+}
+
+thead th:nth-child(2) {
+  width: 20%;
+}
+
+thead th:nth-child(3) {
+  width: 15%;
+}
+
+thead th:nth-child(4) {
+  width: 35%;
+}
+
+th, td {
+  padding: 20px;
+}
+  </style>
+    <meta charset="UTF-8">
+    <title>Main Page</title>
+</head>
+<body>
+<table class="table table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Pair Name</th>
+                <th scope="col">Price</th>
+           </tr>
+        </thead>
+      <tbody id="tableBody">
+
+ </tbody>
+</table>
+
+<script>
+    fetch("/gettable")
+        .then(function (response) {
+            return response.text();
+        }).then(function (text) {
+        var data = JSON.parse(text);
+        console.log(typeof data);
+        console.log(data);
+        var arr = data.result;
+        const tableData = arr.map(function(value){
+                    var new_value = JSON.parse(value);
+                    var str = "graphPage/" + new_value.id;
+                    console.log(new_value);
+                    return (
+                        `<tr>
+                            <td>${new_value.id}</td>
+                            <td><a href=${str}>${new_value.name}</a></td>
+                            <td>${new_value.price}</td>
+                            <td></td>
+                        </tr>`
+                    );
+                }).join('');
+
+        const tabelBody = document.querySelector("#tableBody");
+        tableBody.innerHTML = tableData;
+    })
+
+     setInterval(function() {
+         fetch("/gettable")
+        .then(function (response) {
+            return response.text();
+        }).then(function (text) {
+        var data = JSON.parse(text);
+        console.log(typeof data);
+        console.log(data);
+        var arr = data.result;
+        const tableData = arr.map(function(value){
+                    var new_value = JSON.parse(value);
+                    console.log(new_value);
+                    var str = "graphPage/" + new_value.id;
+                    return (
+                        `<tr>
+                            <td>${new_value.id}</td>
+                            <td><a href=${str}>${new_value.name}</a></td>
+                            <td>${new_value.price}</td>
+                            <td></td>
+                        </tr>`
+                    );
+                }).join('');
+
+        const tabelBody = document.querySelector("#tableBody");
+        tableBody.innerHTML = tableData;
+     });}, 5000)
+
+</script>
+</body>
+</html>

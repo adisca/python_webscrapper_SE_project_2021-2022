@@ -1,0 +1,162 @@
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Scope+One&display=swap" rel="stylesheet">
+
+    <!-- Load plotly.js into the DOM -->
+    <script src='https://cdn.plot.ly/plotly-2.5.1.min.js'></script>
+    <title>Token Page</title>
+</head>
+
+<style>
+    body{font-family: 'Scope One', serif; text-align: center;}
+</style>
+
+<body>
+
+<h1 id='embed'>This should not appear</h1>
+
+<button id="demo">Autoscroll On</button>
+<script>
+    document.getElementById("demo").onclick = function() {myFunction()};
+    let ok = 1;
+
+    function myFunction() {
+        if (ok == 0)
+            document.getElementById("demo").innerHTML = "Autoscroll On";
+        else
+            document.getElementById("demo").innerHTML = "Autoscroll Off";
+        ok = 1 - ok;
+    }
+</script>
+<div id="myDiv"></div>
+
+<script>
+    function rand() {
+        return Math.random() / 100000;
+    }
+    // section to log into element instead console
+    let last_price = "0.0";
+
+    // substitution test
+    document.getElementById('embed').innerHTML = "{{embed}}"
+
+    const trace1 = {
+        x: [],
+        close: [],
+        decreasing: {line: {color: '#7F7F7F'}},
+        high: [],
+        increasing: {line: {color: '#17BECF'}},
+        line: {color: 'rgba(31,119,180,1)'},
+        low: [],
+        open: [],
+        type: 'candlestick',
+        xaxis: 'x',
+        yaxis: 'y',
+        text: []
+    };
+
+    const data = [trace1];
+
+    const layout = {
+        dragmode: 'zoom',
+        margin: {
+            r: 10,
+            t: 25,
+            b: 40,
+            l: 60
+        },
+        showlegend: false,
+    };
+
+    Plotly.newPlot('myDiv', data, layout, {scrollZoom: true});
+
+    const time = new Date();
+    let minuteView = {
+        xaxis: {
+            type: 'date',
+            range: [time, time.setMinutes(time.getMinutes() + 1)]
+        },
+        yaxis: {
+            fixedrange: false
+        }
+    };
+
+    var pair_id = {{my_id}}
+
+    console.log(pair_id)
+
+    fetch("/getdata/" + pair_id)
+        .then(function (response) {
+            return response.text();
+        }).then(function (text) {
+        const obj = JSON.parse(text);
+        last_price = obj.new_price;
+        console.log('GET response text:');
+        console.log(last_price);
+    })
+
+    setInterval(function() {
+        fetch("/getdata/" + pair_id)
+            .then(function (response) {
+                return response.text();
+            }).then(function (text) {
+            const obj = JSON.parse(text);
+            if (last_price !== obj.new_price) {
+                const time = new Date();
+
+                let price_low = 0.0;
+                let price_high = 0.0;
+                if (last_price > obj.new_price) {
+                    price_high = last_price
+                    price_low = obj.new_price
+                }
+                else {
+                    price_high = obj.new_price
+                    price_low = last_price
+                }
+
+                const update = {
+                    x: [[time]],
+                    close: [[obj.new_price]],
+                    high: [[price_high]],
+                    low: [[price_low]],
+                    open: [[last_price]],
+                    text: [[((obj.new_price - last_price) * 100 / obj.new_price) + "%"]]
+                };
+
+                if (ok === 0)
+                {
+                    const yaixsrange = minuteView.xaxis.range;
+                    minuteView = {
+                        xaxis: {
+                            type: 'date',
+                            range: [yaixsrange[0], yaixsrange[1]]
+                        }
+                    };
+                }
+                else
+                {
+                    const olderTime = time.setMinutes(time.getMinutes() - 1);
+                    const futureTime = time.setMinutes(time.getMinutes() + 2);
+                    time.setMinutes(time.getMinutes() - 1);
+                    minuteView = {
+                        xaxis: {
+                            type: 'date',
+                            range: [olderTime, futureTime]
+                        },
+                        yaxis: {
+                            fixedrange: false
+                        }
+                    };
+                }
+
+                Plotly.relayout('myDiv', minuteView);
+                Plotly.extendTraces('myDiv', update, [0]);
+                console.log('GET response text:');
+                console.log(text);
+                console.log(last_price);
+                console.log(obj.new_price);
+                last_price = obj.new_price;
+            }
+        });}, 1000)
+
+</script>
